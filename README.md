@@ -115,7 +115,14 @@ SQLite database files are created locally and are excluded from version control.
 
 ## Screenshots
 
-*Screenshots of gameplay, player analytics and replay analysis will be added here.*
+### Real-Time Poker Gameplay
+
+![Poker gameplay](screenshots/Gameplay.png)
+
+### Hand Replay
+
+![Hand replay](screenshots/replay.png)
+
 
 ## Technical Highlights
 
