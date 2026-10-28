@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logged Out • Poker Trainer</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: radial-gradient(circle, #006400, #003300);
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.logout-container {
+    background: rgba(0, 0, 0, 0.75);
+    padding: 50px 60px;
+    border-radius: 14px;
+    text-align: center;
+    border: 2px solid #b8860b;
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.25);
+    max-width: 500px;
+}
+
+h1 {
+    color: gold;
+    margin-bottom: 20px;
+    font-size: 30px;
+}
+
+p {
+    font-size: 18px;
+    margin-bottom: 30px;
+    color: #e6e6e6;
+}
+
+.login-link {
+    display: inline-block;
+    background: gold;
+    color: black;
+    padding: 12px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 16px;
+    transition: 0.2s ease-in-out;
+}
+
+.login-link:hover {
+    background: #ffdb4d;
+    transform: translateY(-2px);
+}
+</style>
+</head>
+
+<body>
+
+<div class="logout-container">
+    <h1>♠ Successfully Logged Out ♣</h1>
+    <p>You have safely logged out of Poker Trainer.</p>
+    <a href="/login" class="login-link">Return to Login</a>
+</div>
+
+</body>
+</html>

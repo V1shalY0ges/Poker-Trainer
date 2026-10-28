@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dummy Poker Table</title>
+
+<style>
+body { font-family: monospace; background-color: #003300; color: #fff; display: flex; gap: 20px; padding: 20px; margin: 0; }
+#side-panel { flex: 1; }
+#log { background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; height: 600px; overflow-y: auto; white-space: pre-wrap; font-size: 14px; }
+.log-info { color: lightblue; }
+.log-turn { color: yellow; font-weight: bold; }
+.log-action { color: lightgreen; }
+.log-error { color: red; font-weight: bold; }
+#table-container { flex: 3; position: relative; background: #014d01; border-radius: 14px; padding: 25px; }
+#tableIdDisplay { font-size: 20px; margin-bottom: 10px; color: gold; }
+#community { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.player { position: absolute; width: 120px; text-align: center; transition: all 0.3s ease; }
+.player.current-turn { background: rgba(255, 255, 0, 0.3); border-radius: 8px; }
+.player .name { font-weight: bold; }
+.player .chips { color: gold; font-size: 14px; }
+.cards { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
+.card { width: 70px; height: 100px; border-radius: 6px; opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease, transform 0.5s ease; border: 2px solid black; box-shadow: 0 0 5px black; }
+.card.show { opacity: 1; transform: translateY(0); }
+.last-action {
+    font-size: 12px;
+    color: #ffeb99;
+    margin-bottom: 2px;
+    font-style: italic;
+    min-height: 14px;
+}
+/* NEW: player current bet */
+.player-bet {
+    font-size: 12px;
+    color: #90ee90;
+    margin-bottom: 2px;
+    min-height: 14px;
+}
+
+button { width: 100%; padding: 10px; margin-top: 5px; background: gold; border: none; border-radius: 5px; cursor: pointer; color: black; }
+button:hover { background: #ffdb4d; }
+
+/* NEW: table info box */
+#table-info {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.65);
+    border: 2px solid gold;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #fff;
+    min-width: 160px;
+}
+
+#table-info div {
+    margin-bottom: 4px;
+}
+
+#table-info strong {
+    color: gold;
+}
+
+#raiseAmount { width: 100%; padding: 8px; margin-top: 5px; }
+#startGameBtn { background:#228B22; color:white; display:none; }
+
+/* Thinking animation */
+.thinking {
+    font-style: italic;
+    color: #ffeb99;
+}
+
+.thinking::after {
+    content: "";
+    animation: dots 1.5s infinite steps(3);
+}
+
+@keyframes dots {
+    0%   { content: ""; }
+    33%  { content: "."; }
+    66%  { content: ".."; }
+    100% { content: "..."; }
+}
+
+/* Optional: glowing pulse */
+.player.thinking-turn {
+    transform: scale(1.08);                 /* slightly bigger */
+    background: rgba(255, 255, 0, 0.45);    /* brighter yellow */
+    border: 3px solid gold;                 /* bold border */
+    border-radius: 12px;
+    animation: strongPulse 1.2s infinite;
+    z-index: 10;                            /* appear above others */
+}
+
+/* Strong glowing pulse */
+@keyframes strongPulse {
+    0% {
+        box-shadow: 0 0 10px yellow;
+    }
+    50% {
+        box-shadow: 0 0 35px gold;
+    }
+    100% {
+        box-shadow: 0 0 10px yellow;
+    }
+}
+</style>
+</head>
+<body>
+
+<div id="side-panel">
+    <h3>Connected as: <span id="playerName"></span></h3>
+    <h4>Game ID: <span id="tableIdDisplay"></span></h4>
+    <div id="log">Waiting for updates...</div>
+    <div id="actions">
+        <button onclick="sendAction('check')">Check</button>
+        <button onclick="sendAction('call')">Call</button>
+        <input id="raiseAmount" type="number" placeholder="Raise amount">
+        <button onclick="raiseAction()">Raise</button>
+        <button onclick="sendAction('fold')">Fold</button>
+        <button id="startGameBtn">Start Game</button>
+    </div>
+</div>
+
+<div id="table-container">
+    <div id="pot">Pot: 0</div>
+    <!-- NEW: table info box -->
+    <div id="table-info">
+        <div><strong>Stage:</strong> <span id="info-stage">-</span></div>
+        <div><strong>Pot:</strong> <span id="info-pot">0</span></div>
+        <div><strong>Current Bet:</strong> <span id="info-bet">0</span></div>
+    </div>
+
+    <div id="community"></div>
+    <div class="player" id="p0"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p1"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p2"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p3"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p4"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p5"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+</div>
+
+<script>
+const token = sessionStorage.getItem("token");
+const playerName = sessionStorage.getItem("username");
+const tableId = "{{ table_id }}";
+let lastStage = null;
+
+
+
+if (!token || !playerName) {
+    alert("You must be logged in.");
+    window.location.href = "/login";
+}
+
+document.getElementById("playerName").textContent = playerName;
+document.getElementById("tableIdDisplay").textContent = tableId;
+
+const seatOrder = ["p0","p1","p2","p3","p4","p5"];
+const seatMap = {};
+
+const protocol = location.protocol === "https:" ? "wss" : "ws";
+const ws = new WebSocket(`${protocol}://${location.host}/ws/${tableId}/${playerName}?token=${token}`);
+
+ws.onopen = () => addLog("Connected to server.", "info");
+ws.onclose = () => addLog("Disconnected.", "error");
+ws.onerror = () => addLog("WebSocket error.", "error");
+
+let lastLoggedAction = "";
+
+ws.onmessage = e => {
+    try {
+        const msg = JSON.parse(e.data);
+        if (msg.type !== "invalid_action") {
+            document.querySelectorAll(".player").forEach(el => el.classList.remove("current-turn"));
+        }
+
+        if (msg.type === "your_turn" && seatMap[msg.player]) {
+            document.getElementById(seatMap[msg.player]).classList.add("current-turn");
+        }
+        if (msg.type === "invalid_action") {
+            addLog(msg.last_action || "Invalid action! Please try again.", "error");
+            return; // important: skip updateUI so cards and players don't disappear
+        }
+
+        if (msg.type === "hand_over") {
+
+    // Store results for win screen
+    sessionStorage.setItem("handResults", JSON.stringify({
+        state: msg.state,
+        winnings: msg.winnings
+    }));
+
+    // Disable all action buttons
+    document.querySelectorAll("#actions button").forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = "0.6";
+        btn.style.cursor = "not-allowed";
+    });
+
+    // Build winner message
+    let winnerText = " GAME OVER\n\n";
+
+    for (const [player, amount] of Object.entries(msg.winnings)) {
+        if (amount > 0) {
+            winnerText += `${player} wins ${amount} chips\n`;
+        }
+    }
+
+    addLog("==================================", "info");
+    addLog(winnerText, "action");
+
+    // Create clickable link to winnings page
+    const linkDiv = document.createElement("div");
+    linkDiv.innerHTML = `
+        <br>
+        <a href="/win_screen.html"
+           style="
+              display:inline-block;
+              margin-top:8px;
+              padding:8px ;
+              background:gold;
+              color:black;
+              text-decoration:none;
+              border-radius:6px;
+              font-weight:bold;
+              width:250px
+           ">
+           View Full Hand Results →
+        </a>
+    `;
+    logDiv.appendChild(linkDiv);
+    logDiv.scrollTop = logDiv.scrollHeight;
+
+    return;
+}
+
+
+        updateUI(msg);
+        if (msg.last_action && msg.state && msg.state.players) {
+            msg.state.players.forEach(p => {
+                const seatId = seatMap[p.name];
+                if (!seatId) return;
+
+                const seat = document.getElementById(seatId);
+                const lastActionDiv = seat.querySelector(".last-action");
+
+                seat.classList.remove("thinking-turn");
+                lastActionDiv.classList.remove("thinking");
+
+        // If last_action starts with the player's name
+        // e.g. "Alex raises 50"
+                if (msg.last_action && msg.last_action.startsWith(p.name)) {
+
+                    const actionText = msg.last_action.replace(p.name, "").trim();
+
+                    lastActionDiv.textContent = actionText;
+
+                    if (actionText.toLowerCase().includes("thinking")) {
+                        lastActionDiv.classList.add("thinking");
+                        seat.classList.add("thinking-turn");
+                    } else {
+                        lastActionDiv.classList.remove("thinking");
+                        seat.classList.remove("thinking-turn");
+                    }
+                }
+            });
+        }
+        if (msg.last_action) {
+           const simplified = msg.last_action
+               .replace(/successfully/i, "")
+               .replace(/None/i, "")
+               .trim();
+
+           if (simplified && simplified !== lastLoggedAction) {
+               let type = "info";
+                if (msg.type === "your_turn" || simplified.toLowerCase().includes("waiting")) type = "turn";
+                else if (/call|raise|bet|check|fold/i.test(simplified)) type = "action";
+                else if (msg.type === "invalid_action" || /invalid|error/i.test(simplified)) type = "error";
+
+                addLog(simplified, type);
+                lastLoggedAction = simplified;
+            }
+        }
+
+    } catch (err) {
+        console.error("WS parse error", err);
+    }
+};
+
+const logDiv = document.getElementById("log");
+
+
+function addLog(msg, type="info"){
+    const trimmed = msg.trim();
+    if(trimmed === lastLoggedAction) return; // skip duplicates
+    lastLoggedAction = trimmed;
+    const p = document.createElement("div");
+    p.textContent = msg;
+    p.className = "log-" + type;
+    logDiv.appendChild(p);
+    logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+
+
+function sendAction(action, amount = null){
+    if(ws.readyState !== WebSocket.OPEN) return alert("Not connected.");
+    const msg = { action };
+    if(amount !== null) msg.amount = amount;
+    ws.send(JSON.stringify(msg));
+}
+
+function raiseAction(){
+    const amt = parseInt(document.getElementById("raiseAmount").value);
+    if(!amt || amt <= 0) return alert("Enter a raise amount.");
+    sendAction("raise", amt);
+}
+
+document.getElementById("startGameBtn").style.display = "block";
+document.getElementById("startGameBtn").onclick = () => {
+    sendAction("start_game");
+    document.getElementById("startGameBtn").style.display = "none";
+};
+
+function setActionsEnabled(enabled) {
+    document.querySelectorAll("#actions button").forEach(btn => {
+        btn.disabled = !enabled;
+        btn.style.opacity = enabled ? "1" : "0.5";
+        btn.style.cursor = enabled ? "pointer" : "not-allowed";
+    });
+}
+
+function updateUI(msg){
+    const state = msg.state || {};
+    if (state.stage && state.stage !== lastStage) {
+        document.getElementById("info-bet").textContent = "0";
+        document.querySelectorAll(".player-bet").forEach(div => div.textContent = "Bet: 0");
+        lastStage = state.stage;
+    }
+    document.getElementById("info-stage").textContent =
+    state.stage ? state.stage.toUpperCase() : "-";
+
+    document.getElementById("info-pot").textContent =
+        state.pot !== undefined ? state.pot : 0;
+
+    document.getElementById("info-bet").textContent =
+        state.current_bet !== undefined ? state.current_bet : 0;
+
+    document.getElementById("pot").textContent = "Pot: " + (state.pot || 0);
+
+    const comm = document.getElementById("community");
+    comm.innerHTML = "";
+    (state.community_cards || []).forEach(card => {
+        const img = document.createElement("img");
+        img.src = `/static/cards/${card}.png`;
+        img.className = "card show";
+        comm.appendChild(img);
+    });
+
+    (state.players || []).forEach(p => {
+        if(!seatMap[p.name]){
+            const emptySeat = seatOrder.find(sid => !Object.values(seatMap).includes(sid));
+            if(!emptySeat) return;
+            seatMap[p.name] = emptySeat;
+        }
+    });
+
+    const table = document.getElementById("table-container");
+    const centerX = table.offsetWidth / 2;
+    const centerY = table.offsetHeight / 2;
+    const radius = Math.min(centerX, centerY) * 0.7;
+    const players = state.players || [];
+    const angleStep = (2 * Math.PI) / players.length;
+
+    players.forEach((p,i)=>{
+        const seat = document.getElementById(seatMap[p.name]);
+        if(!seat) return;
+
+        const angle = i * angleStep - Math.PI / 2;
+        const verticalOffset = 25; // adjust this value if needed
+
+        const x = centerX + radius * Math.cos(angle) - seat.offsetWidth / 2;
+        const y = centerY + radius * Math.sin(angle) - seat.offsetHeight / 2 + verticalOffset;
+
+        seat.style.left = x + "px";
+        seat.style.top = y + "px";
+
+        seat.querySelector(".name").textContent = p.name;
+        seat.querySelector(".chips").textContent = "Chips: " + p.chips;
+
+        const betDiv = seat.querySelector(".player-bet");
+        const playerBet = p.current_bet ?? p.bet ?? p.contribution ?? 0;
+        betDiv.textContent = "Bet: " + playerBet;
+
+        const cardsDiv = seat.querySelector(".cards");
+        cardsDiv.innerHTML = "";
+
+        if(p.name === playerName && p.hole_cards){
+            p.hole_cards.forEach(c => {
+                const img = document.createElement("img");
+                img.src = `/static/cards/${c}.png`;
+                img.className = "card show";
+                cardsDiv.appendChild(img);
+            });
+        } else if(p.hole_cards){
+            p.hole_cards.forEach(()=> {
+                const img = document.createElement("img");
+                img.src = "/static/cards/back.png";
+                img.className = "card show";
+                cardsDiv.appendChild(img);
+            });
+        }
+    });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.idea/
+.DS_Store
+
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.csv
+*.pkl
+
+*.docx
+# Historical development experiments
+game_clean/tests/advanced_bot/nea testing/
+game_clean/tests/preflop_tester/

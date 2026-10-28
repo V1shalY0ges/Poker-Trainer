@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Poker Trainer • Replays</title>
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI";
+    background: radial-gradient(circle, #006400, #003300);
+    color: #fff;
+}
+.container {
+    max-width: 950px;
+    margin: 30px auto;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 12px;
+    border: 2px solid #b8860b;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+h1 {
+    color: gold;
+    text-align: center;
+}
+.replay-list {
+    margin-top: 20px;
+    list-style-type: none;
+    padding: 0;
+}
+.replay-item {
+    padding: 12px;
+    margin-top: 10px;
+    border: 1px solid gold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.replay-item:hover {
+    background: rgba(255, 215, 0, 0.2);
+}
+.replay-item .table-id {
+    font-weight: bold;
+    color: #00ffff;
+}
+.replay-item .time {
+    font-size: 0.9em;
+    color: #ffd700;
+}
+.button {
+    background: gold;
+    color: black;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    margin-top: 20px;
+    text-decoration: none;
+}
+.button:hover {
+    background: #ffdb4d;
+}
+
+    .top-home-link {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    background: gold;
+    color: black;
+    padding: 8px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: 0.2s ease-in-out;
+}
+
+.top-home-link:hover {
+    background: #ffdb4d;
+}
+
+</style>
+</head>
+
+<body>
+<a href="/dummy_home" class="top-home-link">Home</a>
+
+<div class="container">
+    <h1>Watch Replays</h1>
+
+    <ul id="replayList" class="replay-list">
+        <!-- List of replays will be inserted here dynamically -->
+    </ul>
+
+    <button class="button" onclick="window.location.href='/dummy_home'">Back to Home</button>
+</div>
+
+<script>
+// Get JWT token
+const token = sessionStorage.getItem("token");
+
+// If no token, force login
+if (!token) {
+    window.location.href = "/login";
+}
+
+// Fetch replays and display them
+fetch("/api/replays", {
+    headers: {
+        "Authorization": "Bearer " + token
+    }
+})
+.then(res => {
+    if (!res.ok) {
+        throw new Error("Unauthorised or failed to load replays");
+    }
+    return res.json();
+})
+.then(data => {
+    const replayList = document.getElementById("replayList");
+
+    if (!data.replays || data.replays.length === 0) {
+        replayList.innerHTML = "<li>No replays available.</li>";
+        return;
+    }
+
+    data.replays.forEach(replay => {
+        const replayItem = document.createElement("li");
+        replayItem.className = "replay-item";
+
+        replayItem.innerHTML = `
+            <div class="table-id">Table ${replay.table_id}</div>
+            <div class="time">${replay.pretty_time}</div>
+        `;
+
+        replayItem.onclick = () => {
+            window.location.href = `/replay/${replay.table_id}`;
+        };
+
+        replayList.appendChild(replayItem);
+    });
+})
+.catch(err => {
+    document.getElementById("replayList").innerHTML =
+        `<li style="color:red;">${err.message}</li>`;
+});
+</script>
+
+</body>
+</html>

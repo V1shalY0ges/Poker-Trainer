@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Game Settings</title>
+<style>
+body {
+    margin:0;
+    font-family:"Segoe UI";
+    background: radial-gradient(circle,#006400,#003300);
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.settings-container {
+    background:rgba(0,0,0,0.75);
+    padding:40px;
+    border-radius:12px;
+    width:100%;
+    max-width:500px;
+    text-align:center;
+    border:2px solid #b8860b;
+    box-shadow:0 0 20px rgba(0,255,0,0.3);
+}
+h1 {
+    color:gold;
+    font-size:28px;
+    margin-bottom:20px;
+}
+label {
+    display:block;
+    margin:15px 0 5px;
+    font-size:18px;
+}
+select {
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:none;
+    font-size:16px;
+}
+.button {
+    background:gold;
+    color:black;
+    padding:12px 25px;
+    border:none;
+    border-radius:8px;
+    font-size:18px;
+    cursor:pointer;
+    text-decoration:none;
+    transition:0.2s ease-in-out;
+    margin-top:20px;
+    width:100%;
+}
+.button:hover { background:#ffdb4d; }
+</style>
+</head>
+<body>
+<div class="settings-container">
+    <h1>Game Settings</h1>
+
+    <label for="numBots">Number of Bots (max 2)</label>
+    <select id="numBots">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+    </select>
+
+    <label for="difficulty">Bot Difficulty</label>
+    <select id="difficulty">
+        <option value="beginner">Beginner</option>
+        <option value="intermediate">Intermediate</option>
+    </select>
+
+    <button class="button" id="createGameBtn">Create Game</button>
+</div>
+
+<script>
+if (!sessionStorage.getItem("token")) window.location.href="/login";
+
+document.getElementById("createGameBtn").onclick = async () => {
+    const token = sessionStorage.getItem("token");
+    const numBots = parseInt(document.getElementById("numBots").value);
+    const difficulty = document.getElementById("difficulty").value;
+
+    try {
+        // 1️⃣ Create the game
+        const createRes = await fetch("/games/create", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token }
+        });
+        const createData = await createRes.json();
+        const tableId = createData.table_id;
+
+        // 2️⃣ Initialise bots BEFORE entering the game
+        if (numBots > 0) {
+            await fetch(`/games/${tableId}/initialise_bots`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ num_bots: numBots, difficulty: difficulty })
+            });
+        }
+
+        // 3️⃣ Redirect to dummy game page
+        window.location.href = `/dummy_game/${tableId}`;
+    } catch (err) {
+        console.error("Error creating game:", err);
+        alert("Failed to create game. Check console for details.");
+    }
+};
+</script>
+</body>
+</html>

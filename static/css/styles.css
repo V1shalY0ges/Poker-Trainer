@@ -1,0 +1,118 @@
+/* ------------------------------------------
+   General Body & Background
+------------------------------------------ */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #0b3d0b; /* green poker table color fallback */
+    background-image: url("/static/img/poker_table_bg.jpg"); /* table background image */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    color: white;
+}
+
+/* ------------------------------------------
+   Cards
+------------------------------------------ */
+.poker-card {
+    width: 90px;
+    height: 130px;
+    border-radius: 5px;
+    margin: 5px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+}
+
+/* ------------------------------------------
+   Community Cards Container
+------------------------------------------ */
+.community-cards {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+/* ------------------------------------------
+   Player Cards Container
+------------------------------------------ */
+.player-cards {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+}
+
+/* ------------------------------------------
+   Pot Display
+------------------------------------------ */
+#pot-display {
+    font-size: 28px;
+    font-weight: bold;
+    color: yellow;
+    text-shadow: 2px 2px 5px black;
+    margin: 20px auto;
+    text-align: center;
+}
+
+/* ------------------------------------------
+   Player Area
+------------------------------------------ */
+.player-area {
+    position: fixed;
+    bottom: 30px;
+    width: 100%;
+    text-align: center;
+}
+
+/* ------------------------------------------
+   Action Buttons
+------------------------------------------ */
+.action-buttons button {
+    margin: 8px;
+    min-width: 80px;
+}
+
+/* Input fields for raise/bet */
+#raise-amount, #bet-amount {
+    width: 100px;
+    margin-right: 8px;
+    border-radius: 5px;
+    border: none;
+    text-align: center;
+}
+
+/* ------------------------------------------
+   Cards and Table layout for responsiveness
+------------------------------------------ */
+@media screen and (max-width: 768px) {
+    .poker-card {
+        width: 70px;
+        height: 100px;
+        margin: 3px;
+    }
+
+    #pot-display {
+        font-size: 22px;
+    }
+
+    .action-buttons button {
+        margin: 4px;
+        min-width: 60px;
+        font-size: 14px;
+    }
+
+    #raise-amount, #bet-amount {
+        width: 70px;
+    }
+}
+
+/* ------------------------------------------
+   Alert / Error Messages
+------------------------------------------ */
+#error-box {
+    display: none;
+    width: 50%;
+    margin: 10px auto;
+}

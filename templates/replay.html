@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poker Trainer • Replay</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI";
+    background: radial-gradient(circle, #006400, #003300);
+    color: #fff;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 25px;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 12px;
+    border: 2px solid #b8860b;
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.3);
+}
+
+h1 {
+    color: gold;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.replay-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.replay-table th,
+.replay-table td {
+    border: 1px solid gold;
+    padding: 8px 12px;
+    text-align: center;
+}
+
+.replay-table th {
+    background: #b8860b;
+    color: black;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.replay-table tr.green { background: rgba(0, 128, 0, 0.45); }
+.replay-table tr.yellow { background: rgba(255, 215, 0, 0.25); }
+.replay-table tr.red { background: rgba(178, 34, 34, 0.45); }
+
+.replay-table tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.equity {
+    color: #00ffff;
+    font-weight: bold;
+}
+
+.button {
+    background: gold;
+    color: black;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.button:hover {
+    background: #ffdb4d;
+}
+
+.collapsible {
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #ffd700;
+    font-size: 0.9em;
+}
+
+.collapsible::before {
+    content: "▶ ";
+}
+
+.collapsible.active::before {
+    content: "▼ ";
+}
+
+.content {
+    display: none;
+    text-align: left;
+    margin-top: 5px;
+    color: #ffd700;
+    font-size: 0.85em;
+}
+
+.loading-row {
+    color: #00ffff;
+    font-weight: bold;
+}
+
+.back-btn {
+    margin-top: 20px;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+    <h1>Replay: Table ID <span id="tableIdDisplay"></span></h1>
+
+    <table class="replay-table">
+        <thead>
+            <tr>
+                <th>Stage</th>
+                <th>Action ID</th>
+                <th>Your Action</th>
+                <th>Amount</th>
+                <th>Optimal Action</th>
+                <th>Optimal Amount</th>
+                <th>Equity</th>
+                <th>Reason</th>
+                <th>View Hand</th>
+            </tr>
+        </thead>
+        <tbody id="replayBody">
+            <tr class="loading-row">
+                <td colspan="9">Loading replay...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="back-btn">
+        <button class="button" onclick="window.history.back()">Back</button>
+    </div>
+</div>
+
+<script>
+const urlParts = window.location.pathname.split('/');
+const tableId = urlParts[urlParts.length - 1];
+document.getElementById("tableIdDisplay").textContent = tableId;
+
+const tbody = document.getElementById("replayBody");
+
+const token = sessionStorage.getItem("token");
+if (!token) window.location.href = "/login";
+
+fetch(`/api/replay/${tableId}`, {
+    headers: { "Authorization": "Bearer " + token }
+})
+.then(res => res.ok ? res.json() : res.json().then(e => { throw new Error(e.detail); }))
+.then(data => {
+    tbody.innerHTML = "";
+
+    const actions = data.actions.sort((a, b) => a.id - b.id);
+
+    actions.forEach(a => {
+        const row = document.createElement("tr");
+
+        let colorClass = '';
+        if (a.hero === a.optimal) colorClass = 'green';
+        else if (['call','check'].includes(a.hero) &&
+                 ['call','check'].includes(a.optimal)) colorClass = 'yellow';
+        else colorClass = 'red';
+
+        row.className = colorClass;
+
+        row.innerHTML = `
+            <td>${a.stage}</td>
+            <td>${a.id}</td>
+            <td>${a.hero}</td>
+            <td>${a.amount}</td>
+            <td>${a.optimal}</td>
+            <td>${a.optAmount}</td>
+            <td class="equity">${(a.equity * 100).toFixed(1)}%</td>
+            <td>
+                <button class="collapsible">Reason</button>
+                <div class="content">${a.reason}</div>
+            </td>
+            <td>
+                <a href="/replay/action/${data.table_id}/${a.id}">
+                    <button class="button">View</button>
+                </a>
+            </td>
+        `;
+
+        tbody.appendChild(row);
+    });
+
+    // Collapsible logic
+    document.querySelectorAll(".collapsible").forEach(btn => {
+        btn.addEventListener("click", e => {
+            e.stopPropagation();
+            btn.classList.toggle("active");
+            const content = btn.nextElementSibling;
+            content.style.display = content.style.display === "block" ? "none" : "block";
+        });
+    });
+})
+.catch(err => {
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="9" style="color:red;">Error: ${err.message}</td>
+        </tr>
+    `;
+});
+</script>
+</body>
+</html>

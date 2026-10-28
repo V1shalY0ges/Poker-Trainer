@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poker Replay Action</title>
+
+<style>
+body { font-family: monospace; background-color: #003300; color: #fff; display: flex; gap: 20px; padding: 20px; margin: 0; }
+#side-panel { flex: 1; }
+#log { background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; height: 600px; overflow-y: auto; white-space: pre-wrap; font-size: 14px; }
+.log-info { color: lightblue; }
+.log-turn { color: yellow; font-weight: bold; }
+.log-action { color: lightgreen; }
+.log-error { color: red; font-weight: bold; }
+#table-container { flex: 3; position: relative; background: #014d01; border-radius: 14px; padding: 80px; }
+#tableIdDisplay { font-size: 20px; margin-bottom: 10px; color: gold; }
+#pot { position: absolute; top: 10%; left: 90%; transform: translateX(-50%); font-size: 22px; color: gold; }
+#community { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.player { position: absolute; width: 120px; text-align: center; transition: all 0.3s ease; }
+.player .name { font-weight: bold; }
+.player .chips { color: gold; font-size: 14px; }
+.cards { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
+.card { width: 70px; height: 100px; border-radius: 6px; opacity: 0; transform: translateY(-10px); transition: opacity 0.5s ease, transform 0.5s ease; border: 2px solid black; box-shadow: 0 0 5px black; }
+.card.show { opacity: 1; transform: translateY(0); }
+.last-action { font-size: 12px; color: #ffeb99; margin-bottom: 2px; font-style: italic; min-height: 14px; }
+.player-bet { font-size: 12px; color: #90ee90; margin-bottom: 2px; min-height: 14px; }
+
+#table-info {
+    background: rgba(0,0,0,0.75);
+    border: 2px solid gold;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #fff;
+}
+#table-info div { margin-bottom: 6px; }
+#table-info strong { color: gold; }
+
+#backBtn { background: gold; color: black; padding: 10px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%; }
+#backBtn:hover { background: #ffdb4d; }
+</style>
+</head>
+<body>
+
+<div id="side-panel">
+    <h3>Replay Action View</h3>
+    <h4>Game ID: <span id="tableIdDisplay"></span></h4>
+
+    <!-- Moved table info here -->
+    <div id="table-info">
+        <div><strong>Stage:</strong> <span id="info-stage">-</span></div>
+        <div><strong>Pot:</strong> <span id="info-pot">0</span></div>
+        <div><strong>Current Bet:</strong> <span id="info-bet">0</span></div>
+        <div><strong>Hero Action:</strong> <span id="hero-action">-</span></div>
+        <div><strong>Optimal Action:</strong> <span id="opt-action">-</span></div>
+        <div><strong>Reason:</strong> <span id="action-reason">-</span></div>
+    </div>
+
+    <div id="log"></div>
+    <button id="backBtn" onclick="window.history.back()">Back to Replay</button>
+</div>
+
+<div id="table-container">
+    <div id="pot">Pot: 0</div>
+    <div id="community"></div>
+    <div class="player" id="p0"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p1"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p2"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p3"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p4"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+    <div class="player" id="p5"><div class="player-bet"></div><div class="last-action"></div><div class="name"></div><div class="chips"></div><div class="cards"></div></div>
+</div>
+
+<script>
+const token = sessionStorage.getItem("token");
+const tableId = "{{ game_id }}";
+const actionId = "{{ action_id }}";
+document.getElementById("tableIdDisplay").textContent = tableId;
+
+if(!token) window.location.href="/login";
+
+fetch(`/api/replay/action/${tableId}/${actionId}`, {
+    headers: { "Authorization": "Bearer " + token }
+})
+.then(res => res.ok ? res.json() : res.json().then(e => {throw new Error(e.detail || "Failed to fetch action");}))
+.then(data => {
+    const heroName = sessionStorage.getItem("username");
+
+    // Set table info
+    // Table info
+    document.getElementById("info-stage").textContent = data.stage || data.state?.stage || "-";
+    document.getElementById("info-pot").textContent = data.state?.pot || 0;
+    document.getElementById("info-bet").textContent = data.state?.current_bet || 0;
+    document.getElementById("hero-action").textContent = data.hero || "-";
+    document.getElementById("opt-action").textContent = `${data.optimal || "-"} (${data.optAmount || 0})`;
+    document.getElementById("action-reason").textContent = data.reason || "-";
+
+
+    // Display community cards
+    const comm = document.getElementById("community");
+    comm.innerHTML = "";
+    (data.state?.community_cards || []).forEach(card => {
+        const img = document.createElement("img");
+        img.src = `/static/cards/${card}.png`;
+        img.className = "card show";
+        comm.appendChild(img);
+    });
+
+    // Display players
+    const seatOrder = ["p0","p1","p2","p3","p4","p5"];
+    const seatMap = {};
+    const table = document.getElementById("table-container");
+    const centerX = table.offsetWidth / 2;
+    const centerY = table.offsetHeight / 2;
+    const radius = Math.min(centerX, centerY) *0.6          ;
+    const players = data.state?.players || [];
+    const angleStep = (2*Math.PI)/players.length;
+
+    players.forEach((p,i)=>{
+        let seatId = seatOrder[i];
+        seatMap[p.name] = seatId;
+        const seat = document.getElementById(seatId);
+        if(!seat) return;
+
+        const angle = i*angleStep - Math.PI/2;
+        const x = centerX + radius*Math.cos(angle) - seat.offsetWidth/2;
+        const y = centerY + radius*Math.sin(angle) - seat.offsetHeight/2;
+        seat.style.left = x + "px";
+        seat.style.top = y + "px";
+
+        seat.querySelector(".name").textContent = p.id;
+        seat.querySelector(".chips").textContent = "Chips: "+(p.stack || 0);
+        seat.querySelector(".player-bet").textContent = "Bet: "+(p.contributed || 0);
+        seat.querySelector(".last-action").textContent = p.last_action || "";
+
+        const cardsDiv = seat.querySelector(".cards");
+        cardsDiv.innerHTML = "";
+        // IMPORTANT: use p.id (not p.name)
+        if (p.id === heroName && p.hole_cards) {
+            // Show hero real cards
+            p.hole_cards.forEach(c => {
+                const img = document.createElement("img");
+                img.src = `/static/cards/${c}.png`;
+                img.className = "card show";
+                cardsDiv.appendChild(img);
+            });
+        } else {
+            // Show opponent card backs
+            const cardCount = p.hole_cards ? p.hole_cards.length : 2;
+            for (let i = 0; i < cardCount; i++) {
+                const img = document.createElement("img");
+                img.src = `/static/cards/back.png`;
+                img.className = "card show";
+                cardsDiv.appendChild(img);
+            }
+        }
+    });
+
+    // Set pot
+    document.getElementById("pot").textContent = "Pot: "+(data.state?.pot || 0);
+})
+.catch(err=>{
+    document.getElementById("log").textContent = "Error loading action: "+err.message;
+});
+</script>
+
+</body>
+</html>

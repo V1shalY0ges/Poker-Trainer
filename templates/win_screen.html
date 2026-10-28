@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hand Result</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b6623; /* Poker green */
+            color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            color: #ffd700; /* Golden title */
+            margin-bottom: 20px;
+        }
+
+        .results-container {
+            background-color: #145214; /* Darker green for contrast */
+            padding: 25px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            width: 90%;
+            max-width: 700px;
+        }
+
+        h2 {
+            color: #ffcc00;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #0a3d12;
+            padding-bottom: 5px;
+        }
+
+        .cards, .players {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .card, .player-chip {
+            background-color: #1a3a1a;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 50px;
+        }
+
+        button {
+            margin-top: 30px;
+            padding: 10px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #1a1a1a;
+            background-color: #ffd700;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #e6c200;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hand Results</h1>
+    <div class="results-container" id="results"></div>
+    <button onclick="window.location.href='dummy_home'">Return Home</button>
+
+    <script>
+        const data = JSON.parse(sessionStorage.getItem("handResults"));
+
+        const resultsDiv = document.getElementById("results");
+
+        if (!data) {
+            resultsDiv.innerHTML = "<p>No results found.</p>";
+        } else {
+            const state = data.state;
+            const winnings = data.winnings;
+
+            // Display Winnings
+            let winningsHtml = "<h2>Winnings</h2>";
+            winningsHtml += "<div class='players'>";
+            for (const [player, amount] of Object.entries(winnings)) {
+                winningsHtml += `<div class='player-chip'>${player}: +${amount}</div>`;
+            }
+            winningsHtml += "</div>";
+
+            // Display final chips
+            let chipsHtml = "<h2>Final Chips</h2><div class='players'>";
+            state.players.forEach(p => {
+                chipsHtml += `<div class='player-chip'>${p.name}: ${p.chips}</div>`;
+            });
+            chipsHtml += "</div>";
+
+            // Display community cards
+            let cardsHtml = "<h2>Community Cards</h2><div class='cards'>";
+            state.community_cards.forEach(c => {
+                cardsHtml += `<div class='card'>${c}</div>`;
+            });
+            cardsHtml += "</div>";
+
+            resultsDiv.innerHTML = winningsHtml + chipsHtml + cardsHtml;
+        }
+    </script>
+</body>
+</html>

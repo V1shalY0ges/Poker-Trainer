@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+python-dotenv
+python-jose[cryptography]
+passlib==1.7.4
+bcrypt==4.0.1
+itsdangerous
+jinja2
+python-multipart
+email-validator
+numpy
+scikit-learn==1.7.2
+joblib

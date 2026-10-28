@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Poker Trainer • Home</title>
+<style>
+body {
+    margin:0;
+    font-family:"Segoe UI";
+    background: radial-gradient(circle,#006400,#003300);
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.dashboard {
+    background:rgba(0,0,0,0.75);
+    padding:40px;
+    border-radius:12px;
+    width:100%;
+    max-width:550px;
+    text-align:center;
+    border:2px solid #b8860b;
+    box-shadow:0 0 20px rgba(0,255,0,0.3);
+}
+h1 { color:gold; font-size:32px; margin-bottom:15px; }
+.welcome { font-size:18px; margin-bottom:25px; }
+.button {
+    background:gold;
+    color:black;
+    padding:12px 25px;
+    border:none;
+    border-radius:8px;
+    font-size:18px;
+    cursor:pointer;
+    text-decoration:none;
+    transition:0.2s ease-in-out;
+    margin-top:10px;
+    width:100%;
+}
+.button:hover { background:#ffdb4d; }
+.input-box {
+    width:100%;
+    padding:12px;
+    border-radius:8px;
+    border:none;
+    margin-top:10px;
+    font-size:16px;
+}
+#gameIdDisplay { margin-top:15px; color:gold; font-size:20px; }
+</style>
+</head>
+
+<body>
+<div class="dashboard">
+    <h1>♠ Poker Trainer ♣</h1>
+    <div class="welcome">Welcome, <span id="username">Player</span>!</div>
+
+    <button class="button" id="createGameBtn">Create Custom Game</button>
+
+    <input type="text" id="joinGameInput" placeholder="Enter Game ID" class="input-box">
+    <button class="button" id="joinGameBtn">Join Match</button>
+
+    <!-- Adaptive Bot Game Button -->
+    <button class="button" id="adaptiveGameBtn" style="background:#4CAF50; color:white;">Play Adaptive Bot</button>
+
+    <hr style="margin:20px 0; border:1px solid gold;">
+    <button class="button" id="watchReplayBtn" style="background:#1E90FF; color:white;">Watch Replay</button>
+
+    <button class="button" id="logoutBtn" style="background:#b22222; color:white;">Logout</button>
+</div>
+
+<script>
+// Redirect if no JWT
+if (!sessionStorage.getItem("token")) window.location.href="/login";
+
+// Display username
+document.getElementById("username").textContent = sessionStorage.getItem("username");
+
+// Logout
+document.getElementById("logoutBtn").onclick = () => {
+    sessionStorage.clear();  // removes token + username
+    window.location.href = "/logout";
+};
+
+
+// Create Game → Redirect to settings page
+document.getElementById("createGameBtn").onclick = async () => {
+    window.location.href = "/settings";
+};
+
+// Join Game
+document.getElementById("joinGameBtn").onclick = () => {
+    const id = document.getElementById("joinGameInput").value.trim();
+    if (!id) return alert("Enter a game ID.");
+    window.location.href = `/dummy_game/${id}`;
+};
+
+// Play Adaptive Bot
+document.getElementById("adaptiveGameBtn").onclick = async () => {
+    // Generate a unique game ID
+    const uniqueId = 'AB' + Date.now() + Math.floor(Math.random() * 1000);
+
+    // Redirect to the bot match page
+    window.location.href = `/dummy_game/${uniqueId}?bot=adaptive`;
+};
+// Watch replays
+document.getElementById("watchReplayBtn").onclick = () => {
+    window.location.href = "/replays";
+};
+</script>
+</body>
+</html>
